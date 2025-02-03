@@ -49,6 +49,9 @@ extends:
         - group: source-dot-net stage1 variables
 
         templateContext:
+          type: releaseJob
+          isProduction: true
+
           outputs:
           - output: nuget
             displayName: 'NuGet push'
