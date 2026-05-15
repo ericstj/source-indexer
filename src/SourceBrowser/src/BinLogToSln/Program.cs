@@ -297,16 +297,29 @@ namespace BinLogToSln
                 project.WriteLine("  <ItemGroup>");
                 foreach (var generatedFile in getGeneratedFiles())
                 {
-                    string filePath = generatedFile.FilePath;
-                    if (!File.Exists(filePath))
+                    try
                     {
-                        Directory.CreateDirectory(Path.GetDirectoryName(filePath));
-                        var stream = generatedFile.Stream;
-                        stream.Position = 0;
-                        using var fileStream = File.OpenWrite(filePath);
-                        stream.CopyTo(fileStream);
+                        string filePath = generatedFile.FilePath;
+                        // Write the generated file content under the output directory
+                        // rather than at the original absolute path, which may not be writable.
+                        string repoRelativePath = Path.GetRelativePath(repoRoot, filePath);
+                        string outputFilePath = Path.Join(output, "src", repoRelativePath);
+                        if (!File.Exists(outputFilePath))
+                        {
+                            Directory.CreateDirectory(Path.GetDirectoryName(outputFilePath));
+                            var stream = generatedFile.Stream;
+                            stream.Position = 0;
+                            using var fileStream = File.OpenWrite(outputFilePath);
+                            stream.CopyTo(fileStream);
+                        }
+                        // Include the file using its original path so includeFile
+                        // computes the correct project-relative reference.
+                        includeFile(filePath);
                     }
-                    includeFile(filePath);
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"##vso[task.logissue type=warning;]Error writing generated file: {ex.Message}");
+                    }
                 }
                 project.WriteLine("  </ItemGroup>");
 
