@@ -301,8 +301,8 @@ namespace BinLogToSln
                     try
                     {
                         // Write generated file content under the project directory
-                        // in the output. Use a per-file index to avoid collisions
-                        // between projects that have the same generated file name.
+                        // in the output, rather than at the original absolute path
+                        // from the PDB which may not be writable.
                         string generatedRelPath = Path.Join("_generated", (generatedIdx++).ToString(), Path.GetFileName(generatedFile.FilePath));
                         string outputFilePath = Path.Join(projectDirectory, generatedRelPath);
                         Directory.CreateDirectory(Path.GetDirectoryName(outputFilePath));
