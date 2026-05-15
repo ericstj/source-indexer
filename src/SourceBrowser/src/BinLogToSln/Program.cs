@@ -295,26 +295,23 @@ namespace BinLogToSln
 
                 // Add generated files.
                 project.WriteLine("  <ItemGroup>");
+                int generatedIdx = 0;
                 foreach (var generatedFile in getGeneratedFiles())
                 {
                     try
                     {
-                        string filePath = generatedFile.FilePath;
-                        // Write the generated file content under the output directory
-                        // rather than at the original absolute path, which may not be writable.
-                        string repoRelativePath = Path.GetRelativePath(repoRoot, filePath);
-                        string outputFilePath = Path.Join(output, "src", repoRelativePath);
-                        if (!File.Exists(outputFilePath))
-                        {
-                            Directory.CreateDirectory(Path.GetDirectoryName(outputFilePath));
-                            var stream = generatedFile.Stream;
-                            stream.Position = 0;
-                            using var fileStream = File.OpenWrite(outputFilePath);
-                            stream.CopyTo(fileStream);
-                        }
-                        // Include the file using its original path so includeFile
-                        // computes the correct project-relative reference.
-                        includeFile(filePath);
+                        // Write generated file content under the project directory
+                        // in the output. Use a per-file index to avoid collisions
+                        // between projects that have the same generated file name.
+                        string generatedRelPath = Path.Join("_generated", (generatedIdx++).ToString(), Path.GetFileName(generatedFile.FilePath));
+                        string outputFilePath = Path.Join(projectDirectory, generatedRelPath);
+                        Directory.CreateDirectory(Path.GetDirectoryName(outputFilePath));
+                        var stream = generatedFile.Stream;
+                        stream.Position = 0;
+                        using var fileStream = File.OpenWrite(outputFilePath);
+                        stream.CopyTo(fileStream);
+
+                        project.WriteLine($"    <Compile Include=\"{generatedRelPath}\"/>");
                     }
                     catch (Exception ex)
                     {
